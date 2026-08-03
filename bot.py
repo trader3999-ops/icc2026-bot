@@ -1,3 +1,4 @@
+
 import json
 import logging
 import os
@@ -65,11 +66,11 @@ GREETING_UZ = (
     "Иштирок этганингиз учун раҳмат! 🌍"
 )
  
-GREETING = GREETING_RU + "\n\n〰️〰️〰️\n\n" + GREETING_UZ
+GREETING = GREETING_UZ + "\n\n〰️〰️〰️\n\n" + GREETING_RU
  
 THANKS = (
-    "🇷🇺 Спасибо огромное! Ваш ответ получен ✅\n\n"
-    "🇺🇿 Катта раҳмат! Жавобингиз қабул қилинди ✅"
+    "🇺🇿 Катта раҳмат! Жавобингиз қабул қилинди ✅\n\n"
+    "🇷🇺 Спасибо огромное! Ваш ответ получен ✅"
 )
  
 DATA_FILE = Path("user_camps.json")
