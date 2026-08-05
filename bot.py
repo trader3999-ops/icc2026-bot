@@ -1,4 +1,3 @@
-
 import json
 import logging
 import os
@@ -49,7 +48,7 @@ CAMPS = {
 # Если для лагеря директор ещё не указан — просто оставьте None,
 # сообщения всё равно продолжат падать в ADMIN_CHAT_ID.
 CAMP_ADMINS = {
-    "camp1": None,   # например: 123456789
+    "camp1": 6876995107,  # Анор
     "camp2": None,
     "camp3": None,
     "camp4": None,
@@ -191,3 +190,4 @@ def main():
  
 if __name__ == "__main__":
     main()
+ 
