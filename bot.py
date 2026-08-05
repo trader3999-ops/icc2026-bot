@@ -17,12 +17,10 @@ logging.basicConfig(level=logging.INFO)
  
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "ВАШ_ТОКЕН_СЮДА")
  
-# Ваш личный chat_id или id группы, куда будут падать все сообщения
-# Узнать свой chat_id можно у бота @userinfobot
+# Ваш личный chat_id или id группы, куда будут падать ВСЕ сообщения (общий центр)
 ADMIN_CHAT_ID = int(os.environ.get("ADMIN_CHAT_ID", "0"))
  
 # Название лагерей по коду ссылки: t.me/ВашБот?start=camp1
-# Добавьте сюда все ваши лагеря (до 15+)
 CAMPS = {
     "camp1": "Анор",
     "camp2": "Оқ Кема",
@@ -46,7 +44,32 @@ CAMPS = {
     "camp20": "Қуёшли",
 }
  
-# Каждое сообщение пользователю выходит сразу на двух языках — русском и узбекском (кириллица)
+# chat_id директора (или группы дирекции) для каждого лагеря.
+# Директор узнаёт свой chat_id, написав боту /whoami в личном чате.
+# Если для лагеря директор ещё не указан — просто оставьте None,
+# сообщения всё равно продолжат падать в ADMIN_CHAT_ID.
+CAMP_ADMINS = {
+    "camp1": None,   # например: 123456789
+    "camp2": None,
+    "camp3": None,
+    "camp4": None,
+    "camp5": None,
+    "camp6": None,
+    "camp7": None,
+    "camp8": None,
+    "camp9": None,
+    "camp10": None,
+    "camp11": None,
+    "camp12": None,
+    "camp13": None,
+    "camp14": None,
+    "camp15": None,
+    "camp16": None,
+    "camp17": None,
+    "camp18": None,
+    "camp19": None,
+    "camp20": None,
+}
  
 GREETING_RU = (
     "🇷🇺 Здравствуйте! Вы отправляете материал от лагеря: {camp}.\n\n"
@@ -66,11 +89,11 @@ GREETING_UZ = (
     "Иштирок этганингиз учун раҳмат! 🌍"
 )
  
-GREETING = GREETING_UZ + "\n\n〰️〰️〰️\n\n" + GREETING_RU
+GREETING = GREETING_RU + "\n\n〰️〰️〰️\n\n" + GREETING_UZ
  
 THANKS = (
-    "🇺🇿 Катта раҳмат! Жавобингиз қабул қилинди ✅\n\n"
-    "🇷🇺 Спасибо огромное! Ваш ответ получен ✅"
+    "🇷🇺 Спасибо огромное! Ваш ответ получен ✅\n\n"
+    "🇺🇿 Катта раҳмат! Жавобингиз қабул қилинди ✅"
 )
  
 DATA_FILE = Path("user_camps.json")
@@ -103,11 +126,23 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(GREETING.format(camp=camp_name))
  
  
+async def whoami(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Позволяет директору узнать свой chat_id, чтобы вписать его в CAMP_ADMINS."""
+    chat = update.effective_chat
+    await update.message.reply_text(
+        f"🆔 Ваш chat_id: `{chat.id}`\n\n"
+        f"Передайте этот номер администратору проекта, "
+        f"чтобы он привязал его к вашему лагерю в CAMP_ADMINS.",
+        parse_mode="Markdown",
+    )
+ 
+ 
 async def handle_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     data = load_data()
     info = data.get(str(user.id), {})
     camp_name = info.get("camp_name", "Не указан (не был запущен /start по ссылке лагеря)")
+    camp_code = info.get("camp_code")
  
     caption = (
         f"📩 Новое сообщение\n"
@@ -117,19 +152,26 @@ async def handle_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
  
     msg = update.message
  
-    if msg.voice:
-        await context.bot.send_voice(ADMIN_CHAT_ID, msg.voice.file_id, caption=caption)
-    elif msg.video:
-        await context.bot.send_video(ADMIN_CHAT_ID, msg.video.file_id, caption=caption)
-    elif msg.video_note:
-        await context.bot.send_video_note(ADMIN_CHAT_ID, msg.video_note.file_id)
-        await context.bot.send_message(ADMIN_CHAT_ID, caption)
-    elif msg.audio:
-        await context.bot.send_audio(ADMIN_CHAT_ID, msg.audio.file_id, caption=caption)
-    elif msg.text:
-        await context.bot.send_message(ADMIN_CHAT_ID, f"{caption}\n\nТекст: {msg.text}")
-    else:
-        return
+    # Список получателей: общий админ-чат + (если указан) чат директора этого лагеря
+    recipients = [ADMIN_CHAT_ID]
+    director_chat_id = CAMP_ADMINS.get(camp_code)
+    if director_chat_id:
+        recipients.append(director_chat_id)
+ 
+    for chat_id in recipients:
+        if msg.voice:
+            await context.bot.send_voice(chat_id, msg.voice.file_id, caption=caption)
+        elif msg.video:
+            await context.bot.send_video(chat_id, msg.video.file_id, caption=caption)
+        elif msg.video_note:
+            await context.bot.send_video_note(chat_id, msg.video_note.file_id)
+            await context.bot.send_message(chat_id, caption)
+        elif msg.audio:
+            await context.bot.send_audio(chat_id, msg.audio.file_id, caption=caption)
+        elif msg.text:
+            await context.bot.send_message(chat_id, f"{caption}\n\nТекст: {msg.text}")
+        else:
+            return
  
     await update.message.reply_text(THANKS)
  
@@ -137,6 +179,7 @@ async def handle_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("whoami", whoami))
     app.add_handler(
         MessageHandler(
             filters.VOICE | filters.VIDEO | filters.VIDEO_NOTE | filters.AUDIO | filters.TEXT,
@@ -148,4 +191,3 @@ def main():
  
 if __name__ == "__main__":
     main()
- 
